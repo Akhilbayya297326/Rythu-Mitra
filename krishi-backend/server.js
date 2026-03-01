@@ -10,21 +10,27 @@ const app = express();
 // 1. MIDDLEWARE 
 // ==========================================
 app.use(cors({
-  origin: '*', // Allows mobile phones and other network devices to connect
+  origin: '*', // Allows mobile phones, Render, and Vercel to connect
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
 // ==========================================
-// 2. DATABASE CONNECTION (Local MongoDB)
+// 2. DATABASE CONNECTION (Cloud MongoDB Atlas)
 // ==========================================
-const MONGO_URI = "mongodb://127.0.0.1:27017/krishiDB"; 
+// Your specific Atlas Connection String with credentials integrated
+const CLOUD_MONGO_URI = "mongodb+srv://vramasarma806_db_user:Akhil2025@akcluster.7dzjzpg.mongodb.net/krishiDB?retryWrites=true&w=majority&appName=Akcluster";
+
+// Use Environment Variable if available (on Render), otherwise use the Cloud URI string
+const MONGO_URI = process.env.MONGODB_URI || CLOUD_MONGO_URI; 
 
 mongoose.connect(MONGO_URI)
-  .then(() => console.log("✅ Local MongoDB Connected Successfully!"))
-  .catch(err => console.error("❌ Local DB Error:", err));
-
+  .then(() => console.log("✅ Cloud MongoDB Atlas Connected Successfully!"))
+  .catch(err => {
+    console.error("❌ MongoDB Connection Error:");
+    console.error(err.message);
+  });
 
 // ==========================================
 // 3. DEFINE SCHEMAS (PROJECT 2.0)
@@ -48,7 +54,7 @@ const outbreakSchema = new mongoose.Schema({
 });
 const Outbreak = mongoose.model('Outbreak', outbreakSchema);
 
-// 📒 NEW: Kisan Khata (Smart Ledger) Schema
+// 📒 Kisan Khata (Smart Ledger) Schema
 const LedgerSchema = new mongoose.Schema({
   type: { type: String, enum: ['expense', 'income'], required: true },
   category: String,
@@ -57,7 +63,7 @@ const LedgerSchema = new mongoose.Schema({
 });
 const LedgerTransaction = mongoose.model('LedgerTransaction', LedgerSchema);
 
-// 🤖 NEW: AgriCore AI Scan History Schema
+// 🤖 AgriCore AI Scan History Schema
 const AgriCoreSchema = new mongoose.Schema({
   locationState: String,
   soilType: String,
@@ -148,10 +154,9 @@ app.post('/api/outbreaks', async (req, res) => {
   }
 });
 
-// --- NEW: KISAN KHATA (LEDGER) ROUTES ---
+// --- KISAN KHATA (LEDGER) ROUTES ---
 app.get('/api/ledger', async (req, res) => {
   try {
-    // Returns all financial transactions, sorted by newest first
     const transactions = await LedgerTransaction.find().sort({ date: -1 });
     res.json(transactions);
   } catch (err) {
@@ -177,7 +182,7 @@ app.delete('/api/ledger/:id', async (req, res) => {
   }
 });
 
-// --- NEW: AGRICORE AI LOGS ---
+// --- AGRICORE AI LOGS ---
 app.get('/api/agricore', async (req, res) => {
   try {
     res.json(await AgriCoreScan.find().sort({ date: -1 }));
@@ -195,12 +200,12 @@ app.post('/api/agricore', async (req, res) => {
 });
 
 // ==========================================
-// 5. START SERVER (Updated for Mobile Access)
+// 5. START SERVER (Production Optimized)
 // ==========================================
 const PORT = process.env.PORT || 5000;
-// Binding to 0.0.0.0 forces the server to accept connections from your phone via Wi-Fi
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Project 2.0 Backend Running!`);
-  console.log(`📡 Local Access: http://localhost:${PORT}`);
-  console.log(`📱 Network Access (for Mobile): Find your IPv4 address and append :${PORT} (e.g. http://10.16.43.22:5000)`);
+
+// On Render, we don't always need '0.0.0.0', but it's safe to keep
+app.listen(PORT, () => {
+  console.log(`🚀 Rythu Mitra V2.0 Backend Online!`);
+  console.log(`📡 URL: http://localhost:${PORT}`);
 });
