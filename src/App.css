@@ -1,38 +1,200 @@
-.App {
+/* Styling for a Clean, Farmer-Friendly UI */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f0fdf4; /* Light Green */
+}
+
+.app-header {
+  background: #15803d;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  background: rgba(255,255,255,0.2);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+.content {
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.camera-box {
+  display: block;
+  background: #e6fffa;
+  border: 2px dashed #15803d;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  min-height: 200px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.placeholder {
+  padding-top: 60px;
+  color: #15803d;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.preview-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.btn-primary {
+  width: 100%;
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 15px;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-primary:disabled {
+  background: #ccc;
+}
+
+.result-card {
+  margin-top: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  border-left: 5px solid #16a34a;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+  color: #15803d;
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+.markdown-content p {
+  line-height: 1.6;
+  color: #333;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  padding: 15px 0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  font-weight: bold;
+  color: #888;
+}
+
+.nav-item.active {
+  color: #15803d;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Add these new styles to your existing CSS */
+
+.app-container {
+  padding-bottom: 80px; /* Space for the bottom nav */
+}
+
+.module-container {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  /* Default header style, overriden by inline styles in components */
+  background: #15803d;
+  color: white;
+  padding: 20px;
+  border-radius: 0 0 20px 20px;
+  margin: -20px -20px 20px -20px; /* Stretch to edges */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.header h2 { margin: 0; font-size: 1.5rem; }
+.header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+/* Navigation Active State */
+.nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  text-decoration: none;
+  color: #94a3b8; /* Gray */
+  font-size: 0.75rem;
+  padding: 10px;
+  transition: all 0.2s;
 }
 
-.App-link {
-  color: #61dafb;
+.nav-item.active {
+  color: #15803d; /* Green */
+  transform: scale(1.1);
+  font-weight: bold;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.btn-icon:active {
+  transform: scale(0.95);
+}
+/* Update the Bottom Nav to fit 5 items */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  display: flex;
+  justify-content: space-between; /* Spreads them out evenly */
+  padding: 10px 15px; /* Add padding on sides */
+  box-sizing: border-box; /* Ensures padding doesn't break width */
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  font-weight: bold;
+  color: #888;
+  z-index: 1000;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 0.7rem; /* Slightly smaller text to fit 5 items */
+  padding: 5px;
+  transition: all 0.2s;
+}
+
+/* Remove the margin-top overlap for the new header style */
+.header {
+  border-radius: 0 0 25px 25px; /* Rounder corners */
 }
