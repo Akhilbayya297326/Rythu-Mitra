@@ -7,76 +7,78 @@ const cors = require('cors');
 const app = express();
 
 // ==========================================
-// 1. MIDDLEWARE 
+// 1. NETWORK & SECURITY CONFIGURATION
 // ==========================================
+// DEPLOYMENT FIX: Use process.env.PORT for cloud providers
+const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0'; // Essential: Forces server to accept external connections
+
 app.use(cors({
-  origin: '*', // Allows mobile phones, Render, and Vercel to connect
+  origin: '*', // Allows any device/frontend to send data
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
 // ==========================================
-// 2. DATABASE CONNECTION (Cloud MongoDB Atlas)
+// 2. FAIL-SAFE CLOUD DATABASE CONNECTION
 // ==========================================
-// Your specific Atlas Connection String with credentials integrated
-const CLOUD_MONGO_URI = "mongodb+srv://vramasarma806_db_user:Akhil2025@akcluster.7dzjzpg.mongodb.net/krishiDB?retryWrites=true&w=majority&appName=Akcluster";
+// DEPLOYMENT FIX: Hide credentials in environment variables
+const MONGO_URI = process.env.MONGO_URI;
 
-// Use Environment Variable if available (on Render), otherwise use the Cloud URI string
-const MONGO_URI = process.env.MONGODB_URI || CLOUD_MONGO_URI; 
+if (!MONGO_URI) {
+  console.error("❌ [FATAL] MONGO_URI is missing from .env file!");
+  process.exit(1); // Stop the server if no database is provided
+}
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("✅ Cloud MongoDB Atlas Connected Successfully!"))
-  .catch(err => {
-    console.error("❌ MongoDB Connection Error:");
-    console.error(err.message);
-  });
+const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("✅ [DATABASE] Cloud MongoDB Atlas Link Established!");
+  } catch (err) {
+    console.error("❌ [DATABASE] Connection Failed:", err.message);
+    console.log("🔄 [RETRY] Attempting to reconnect in 5 seconds...");
+    setTimeout(connectDB, 5000); 
+  }
+};
+connectDB();
 
 // ==========================================
-// 3. DEFINE SCHEMAS (PROJECT 2.0)
+// 3. OPTIMIZED SCHEMAS (NEURAL MATRIX)
 // ==========================================
-
-// 🌾 Mandi (Market) Schema
-const MandiSchema = new mongoose.Schema({
+const MandiItem = mongoose.model('MandiItem', new mongoose.Schema({
   crop: String, price: String, market: String, city: String, trend: String   
-});
-const MandiItem = mongoose.model('MandiItem', MandiSchema);
+}));
 
-// 🚜 Rentals (Sahayog) Schema
-const RentalSchema = new mongoose.Schema({
+const RentalItem = mongoose.model('RentalItem', new mongoose.Schema({
   name: String, owner: String, price: String, phone: String
-});
-const RentalItem = mongoose.model('RentalItem', RentalSchema);
+}));
 
-// 🐛 Pest Radar (Outbreaks) Schema
-const outbreakSchema = new mongoose.Schema({
+const Outbreak = mongoose.model('Outbreak', new mongoose.Schema({
   crop: String, disease: String, lat: Number, lon: Number, date: { type: Date, default: Date.now }
-});
-const Outbreak = mongoose.model('Outbreak', outbreakSchema);
+}));
 
-// 📒 Kisan Khata (Smart Ledger) Schema
-const LedgerSchema = new mongoose.Schema({
+const LedgerTransaction = mongoose.model('LedgerTransaction', new mongoose.Schema({
   type: { type: String, enum: ['expense', 'income'], required: true },
-  category: String,
-  amount: Number,
-  date: { type: Date, default: Date.now }
-});
-const LedgerTransaction = mongoose.model('LedgerTransaction', LedgerSchema);
+  category: String, amount: Number, date: { type: Date, default: Date.now }
+}));
 
-// 🤖 AgriCore AI Scan History Schema
-const AgriCoreSchema = new mongoose.Schema({
-  locationState: String,
-  soilType: String,
-  recommendedCrops: [String],
-  riskAnalysis: String,
-  date: { type: Date, default: Date.now }
-});
-const AgriCoreScan = mongoose.model('AgriCoreScan', AgriCoreSchema);
-
+const AgriCoreScan = mongoose.model('AgriCoreScan', new mongoose.Schema({
+  locationState: String, soilType: String, recommendedCrops: [String], riskAnalysis: String, date: { type: Date, default: Date.now }
+}));
 
 // ==========================================
-// 4. API ROUTES
+// 4. ROBUST API ROUTES (Full CRUD)
 // ==========================================
+
+// 🛡️ MOBILE HEALTH CHECK 
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: "Online", 
+    system: "Rythu Mitra API", 
+    database: mongoose.connection.readyState === 1 ? "Connected to Atlas Cloud" : "Reconnecting..."
+  });
+});
 
 // --- MANDI ROUTES ---
 app.get('/api/mandi', async (req, res) => {
@@ -86,126 +88,41 @@ app.get('/api/mandi', async (req, res) => {
     if (market && market !== 'All India') {
       query = { $or: [{ city: new RegExp(market, 'i') }, { market: new RegExp(market, 'i') }] };
     }
-    const items = await MandiItem.find(query);
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    res.json(await MandiItem.find(query).limit(50));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
-app.post('/api/mandi', async (req, res) => {
-  try {
-    const savedItem = await new MandiItem(req.body).save();
-    res.status(201).json(savedItem);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/mandi/:id', async (req, res) => {
-  try {
-    const updatedItem = await MandiItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updatedItem);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/mandi/:id', async (req, res) => {
-  try {
-    await MandiItem.findByIdAndDelete(req.params.id);
-    res.json({ message: "Item successfully deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.post('/api/mandi', async (req, res) => { try { res.status(201).json(await new MandiItem(req.body).save()); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.put('/api/mandi/:id', async (req, res) => { try { res.json(await MandiItem.findByIdAndUpdate(req.params.id, req.body, { new: true })); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.delete('/api/mandi/:id', async (req, res) => { try { await MandiItem.findByIdAndDelete(req.params.id); res.json({ message: "Item purged" }); } catch (err) { res.status(500).json({ error: err.message }); } });
 
 // --- SAHAYOG (RENTALS) ROUTES ---
-app.get('/api/rentals', async (req, res) => {
-  try {
-    res.json(await RentalItem.find());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/rentals', async (req, res) => {
-  try {
-    res.status(201).json(await new RentalItem(req.body).save());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get('/api/rentals', async (req, res) => { try { res.json(await RentalItem.find()); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.post('/api/rentals', async (req, res) => { try { res.status(201).json(await new RentalItem(req.body).save()); } catch (err) { res.status(500).json({ error: err.message }); } });
 
 // --- PEST RADAR ROUTES ---
-app.get('/api/outbreaks', async (req, res) => {
-  try {
-    res.json(await Outbreak.find());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/outbreaks', async (req, res) => {
-  try {
-    res.status(201).json(await new Outbreak(req.body).save());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get('/api/outbreaks', async (req, res) => { try { res.json(await Outbreak.find().sort({ date: -1 })); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.post('/api/outbreaks', async (req, res) => { try { res.status(201).json(await new Outbreak(req.body).save()); } catch (err) { res.status(500).json({ error: err.message }); } });
 
 // --- KISAN KHATA (LEDGER) ROUTES ---
-app.get('/api/ledger', async (req, res) => {
-  try {
-    const transactions = await LedgerTransaction.find().sort({ date: -1 });
-    res.json(transactions);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/ledger', async (req, res) => {
-  try {
-    const newTransaction = new LedgerTransaction(req.body);
-    res.status(201).json(await newTransaction.save());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/ledger/:id', async (req, res) => {
-  try {
-    await LedgerTransaction.findByIdAndDelete(req.params.id);
-    res.json({ message: "Transaction deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get('/api/ledger', async (req, res) => { try { res.json(await LedgerTransaction.find().sort({ date: -1 })); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.post('/api/ledger', async (req, res) => { try { res.status(201).json(await new LedgerTransaction(req.body).save()); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.delete('/api/ledger/:id', async (req, res) => { try { await LedgerTransaction.findByIdAndDelete(req.params.id); res.json({ message: "Transaction deleted" }); } catch (err) { res.status(500).json({ error: err.message }); } });
 
 // --- AGRICORE AI LOGS ---
-app.get('/api/agricore', async (req, res) => {
-  try {
-    res.json(await AgriCoreScan.find().sort({ date: -1 }));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/agricore', async (req, res) => {
-  try {
-    res.status(201).json(await new AgriCoreScan(req.body).save());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get('/api/agricore', async (req, res) => { try { res.json(await AgriCoreScan.find().sort({ date: -1 })); } catch (err) { res.status(500).json({ error: err.message }); } });
+app.post('/api/agricore', async (req, res) => { try { res.status(201).json(await new AgriCoreScan(req.body).save()); } catch (err) { res.status(500).json({ error: err.message }); } });
 
 // ==========================================
-// 5. START SERVER (Production Optimized)
+// 5. BOOT ENGINE (Binding to All Interfaces)
 // ==========================================
-const PORT = process.env.PORT || 5000;
-
-// On Render, we don't always need '0.0.0.0', but it's safe to keep
-app.listen(PORT, () => {
-  console.log(`🚀 Rythu Mitra V2.0 Backend Online!`);
-  console.log(`📡 URL: http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`\n=========================================`);
+  console.log(`🚀 RYTHU MITRA V2.0 ENGINE ONLINE`);
+  console.log(`💻 PORT: ${PORT}`);
+  console.log(`📡 DB STATUS: Connecting to Cloud Atlas...`);
+  console.log(`=========================================\n`);
 });
+
+// GLOBAL ERROR HANDLER (Prevents Crash)
+process.on('uncaughtException', (err) => { console.error('⚠️ Critical System Error:', err); });
+process.on('unhandledRejection', (reason, promise) => { console.error('⚠️ Unhandled Promise Rejection:', reason); });
